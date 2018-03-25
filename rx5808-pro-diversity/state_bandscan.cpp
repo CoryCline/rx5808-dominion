@@ -164,6 +164,10 @@ void StateMachine::BandScanStateHandler::onUpdate() {
           leds[i] = CHSV(192, 255, BRIGHTNESS);//purple
         }
       } else if (redCapturePercent > blueCapturePercent) {
+        //display red up to redCapturePercent
+        for(int i=0;i<(redCapturePercent);++i){
+          leds[i] = CHSV(0, 255, BRIGHTNESS);//red
+        }
         if (redCaptureLevel >= CAPTURE_THRESHOLD) {
           //display blue up to blueCapturePercent
           for(int i=0;i<(blueCapturePercent);++i){
@@ -176,11 +180,15 @@ void StateMachine::BandScanStateHandler::onUpdate() {
           }
         }
         //display red up to redCapturePercent
-        for(int i=0;i<(redCapturePercent);++i){
-          leds[i] = CHSV(0, 255, BRIGHTNESS);//red
-        }
+        //for(int i=0;i<(redCapturePercent);++i){
+          //leds[i] = CHSV(0, 255, BRIGHTNESS);//red
+        //}
       } else {
         if (blueCaptureLevel >= CAPTURE_THRESHOLD) {
+          //display blue up to blueCapturePercent
+          for(int i=0;i<(blueCapturePercent);++i){
+            leds[i] = CHSV(160,255, BRIGHTNESS);//blue
+          }
           //display red up to redCapturePercent
           for(int i=0;i<(redCapturePercent);++i){
             leds[i] = CHSV(0, 255, BRIGHTNESS);//red
@@ -191,10 +199,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
             leds[i] = CHSV(192, 255, BRIGHTNESS);//purple
           }
         }
-        //display blue up to blueCapturePercent
-        for(int i=0;i<(blueCapturePercent);++i){
-          leds[i] = CHSV(160,255, BRIGHTNESS);//blue
-        }
+        
       }
       if (blueCaptureLevel >= CAPTURE_THRESHOLD && defended) {
         //blink blue
