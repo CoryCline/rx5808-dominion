@@ -142,37 +142,68 @@ void StateMachine::BandScanStateHandler::onUpdate() {
       }
       // end housekeeping
       
+      //return the LED's all to black so we can display a change! ... should work here
+      for ( int i=0;i<NUM_LEDS;++i){
+        leds[i] = CRGB::Black;
+      }
+      
       int redCapturePercent = redCaptureLevel*100/CAPTURE_THRESHOLD; //then mapped and constrained
       int blueCapturePercent = blueCaptureLevel*100/CAPTURE_THRESHOLD; //then mapped and constrained
       if (redCaptureLevel < CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD && blueCapturePercent == redCapturePercent) {
         //display purple up to %
-        leds[(NUM_LEDS-1)*redCapturePercent] = CHSV(peakchan, 255, BRIGHTNESS);
+        for(int i=0;i<((NUM_LEDS-1)*redCapturePercent);++i){
+          leds[i] = CHSV(192, 255, BRIGHTNESS);//purple
+        }
       } else if (redCapturePercent > blueCapturePercent) {
         if (redCaptureLevel >= CAPTURE_THRESHOLD) {
           //display blue up to blueCapturePercent
+          for(int i=0;i<((NUM_LEDS-1)*blueCapturePercent);++i){
+            leds[i] = CHSV(160,255, BRIGHTNESS);//blue
+          }
         } else {
           //display purple up to blueCapturePercent (for when cap from neutral)
+          for(int i=0;i<((NUM_LEDS-1)*blueCapturePercent);++i){
+            leds[i] = CHSV(192,255, BRIGHTNESS);//purple
+          }
         }
         //display red up to redCapturePercent
+        for(int i=0;i<((NUM_LEDS-1)*redCapturePercent);++i){
+          leds[i] = CHSV(0, 255, BRIGHTNESS);//red
+        }
       } else {
         if (blueCaptureLevel >= CAPTURE_THRESHOLD) {
           //display red up to redCapturePercent
+          for(int i=0;i<((NUM_LEDS-1)*redCapturePercent);++i){
+            leds[i] = CHSV(0, 255, BRIGHTNESS);//red
+          }
         } else {
           //display purple up to redCapturePercent (for when cap from neutral)
+          for(int i=0;i<((NUM_LEDS-1)*redCapturePercent);++i){
+            leds[i] = CHSV(192, 255, BRIGHTNESS);//purple
+          }
         }
         //display blue up to blueCapturePercent
+        for(int i=0;i<((NUM_LEDS-1)*blueCapturePercent);++i){
+          leds[i] = CHSV(160,255, BRIGHTNESS);//blue
+        {
       }
       if (blueCaptureLevel >= CAPTURE_THRESHOLD && defended) {
         //blink blue
+        leds[(NUM_LEDS-1)] = CHSV(160,255, BRIGHTNESS);//blue
       }
       if (redCaptureLevel >= CAPTURE_THRESHOLD && defended) {
         //blink red
+        leds[(NUM_LEDS-1)] = CHSV(0,255, BRIGHTNESS);//red
       }
       if (blueCaptureLevel < CAPTURE_THRESHOLD && redCaptureLevel < CAPTURE_THRESHOLD) {
         //display neutral state --- 
+        for(int i=0;i<NUM_LEDS;++i){
+          leds[i] = CRGB::Gray;
+        }
       }
-         
-        // end update LED variables
+      // Show the leds
+      FastLED.show();  
+      
       } else {
         firstRun = false;
       }
