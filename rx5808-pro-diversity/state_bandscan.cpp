@@ -38,6 +38,12 @@ void StateMachine::BandScanStateHandler::onEnter() {
     for ( int i=0;i<NUM_LEDS;++i){ //trying this to get rid of green and purple at first power on... might be something to do with inital values of rssiData[orderedChanelIndex] tho...
         leds[i] = CRGB::Black;
     }
+    delay(30);
+    FastLED.show();
+
+    for(int i=0;i<CHANNELS_SIZE;i++){ //initialize rssiData[] to zero's
+      rssiData[i] = 0;
+    }
     
 }
 
@@ -47,7 +53,7 @@ void StateMachine::BandScanStateHandler::onExit() {
 
 //decalre variables for rssi LED output
     const int CAPTURE_THRESHOLD = 100;
-    const int RSSI_THRESHOLD = 70;
+    const int RSSI_THRESHOLD = 50;
     const int CAPTURE_RATE = 10;
     const int DECAY_RATE = 5;
     
@@ -81,8 +87,10 @@ void StateMachine::BandScanStateHandler::onUpdate() {
         }
       }
     }
-    redDroneCount = 0; //but i would think putting this here would make rssiData[orderedChanelIndex] initial values (or any values) irrelivant lol.
-    blueDroneCount = 1;
+    
+    //redDroneCount = 0; //but i would think putting this here would make rssiData[orderedChanelIndex] initial values (or any values) irrelivant lol.
+    //blueDroneCount = 1;
+    
      // start capture game logic and led output
     if (!firstRun && orderedChanelIndex == 0) {//if it's not the first run, and we are on the beginning of a band scan
       defended = false; // reset defended flag each loop
@@ -202,7 +210,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
         leds[((NUM_LEDS-1)/2)] = CHSV(0,255, BRIGHTNESS);//red
         leds[(NUM_LEDS-1)] = CHSV(0,255, BRIGHTNESS);//red
       }
-      if (blueCaptureLevel < CAPTURE_THRESHOLD && redCaptureLevel < CAPTURE_THRESHOLD && (blueCaptureLevel == 0 || redCaptureLevel == 0) ) { //added zero so it doesn't try to display white over a filling up color
+      if (blueCaptureLevel < CAPTURE_THRESHOLD && redCaptureLevel < CAPTURE_THRESHOLD && (blueCapturePercent == 0 && redCapturePercent == 0) ) { //added zero so it doesn't try to display white over a filling up color
         //display neutral state --- 
         for(int i=0;i<NUM_LEDS;++i){
           if(i%2==0){
@@ -213,7 +221,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
       // Show the leds
       FastLED.show();  
 
-      delay(5000); //to troubleshoot beginning issue.
+      //delay(5000); //to troubleshoot beginning issue.
       
       //return the LED's all to black so we can display a change! ... should work here
       for ( int i=0;i<NUM_LEDS;++i){
