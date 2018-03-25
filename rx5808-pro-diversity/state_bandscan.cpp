@@ -52,10 +52,10 @@ void StateMachine::BandScanStateHandler::onExit() {
 }
 
 //decalre variables for rssi LED output
-    const int CAPTURE_THRESHOLD = 2000;
-    const int RSSI_THRESHOLD = 15;
+    const int CAPTURE_THRESHOLD = 1000;
+    const int RSSI_THRESHOLD = 50;
     const int CAPTURE_RATE = 10;
-    const int DECAY_RATE = 30;
+    const int DECAY_RATE = 150;
     
     int redCaptureLevel = 0;
     int blueCaptureLevel = 0;
@@ -75,24 +75,20 @@ void StateMachine::BandScanStateHandler::onUpdate() {
         rssiData[orderedChanelIndex] = Receiver::rssiA;
     #endif
     
-    // populate redDroneCount and blueDroneCount variables based on rssi threshold values for each channel
-    redDroneCount = 0;
-    blueDroneCount = 0;
-    for (int i = 0; i < CHANNELS_SIZE; ++i){
-      if (rssiData[orderedChanelIndex] > RSSI_THRESHOLD) {
-        if (orderedChanelIndex % 2 == 0) {
-          redDroneCount++;
-        } else {
-          blueDroneCount++;
-        }
-      }
-    }
-    
-    //redDroneCount = 0; //but i would think putting this here would make rssiData[orderedChanelIndex] initial values (or any values) irrelivant lol.
-    //blueDroneCount = 1;
-    
      // start capture game logic and led output
     if (!firstRun && orderedChanelIndex == 0) {//if it's not the first run, and we are on the beginning of a band scan .... if you change it to && orderedChanelIndex == 1 , then red becomes blue. wtf
+      // populate redDroneCount and blueDroneCount variables based on rssi threshold values for each channel
+      redDroneCount = 0;
+      blueDroneCount = 0;
+      for (int i = 0; i < CHANNELS_SIZE; ++i){
+        if (rssiData[i] > RSSI_THRESHOLD) {
+          if (i % 2 == 0) {
+            redDroneCount++;
+          } else {
+            blueDroneCount++;
+          }
+        }
+      }
       defended = false; // reset defended flag each loop
       if (redCaptureLevel >= CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD) { // red controls
         if (blueDroneCount > 0) { // blue is attacking
@@ -156,11 +152,11 @@ void StateMachine::BandScanStateHandler::onUpdate() {
       
       //red and blueCapturePercent represents how many led's to light up
       int redCapturePercent = constrain( 
-                                map(redCaptureLevel*100/CAPTURE_THRESHOLD, 0, 100, 0, NUM_LEDS - 1)
-                              ,0, NUM_LEDS - 1);
+                                map(redCaptureLevel*100/CAPTURE_THRESHOLD, 0, 100, 0, NUM_LEDS)
+                              ,0, NUM_LEDS);
       int blueCapturePercent = constrain( 
-                                map(blueCaptureLevel*100/CAPTURE_THRESHOLD,0,100,0, NUM_LEDS - 1)
-                               ,0, NUM_LEDS - 1);
+                                map(blueCaptureLevel*100/CAPTURE_THRESHOLD,0,100,0, NUM_LEDS)
+                               ,0, NUM_LEDS);
       
       if (redCaptureLevel < CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD && blueCapturePercent == redCapturePercent) {
         //display purple up to %
@@ -213,7 +209,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
       if (blueCaptureLevel < CAPTURE_THRESHOLD && redCaptureLevel < CAPTURE_THRESHOLD && (blueCapturePercent == 0 && redCapturePercent == 0) ) { //added zero so it doesn't try to display white over a filling up color
         //display neutral state --- 
         for(int i=0;i<NUM_LEDS;++i){
-          if(i%2==0){
+          if(i%2==1){
             leds[i] = CRGB::Gray;
           }
         }
