@@ -31,6 +31,7 @@ CRGB leds[NUM_LEDS];
 void StateMachine::BandScanStateHandler::onEnter() {
     orderedChanelIndex = 0;
     lastChannelIndex = Receiver::activeChannel;
+    
     //LED stuff
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness(  BRIGHTNESS );
@@ -42,14 +43,18 @@ void StateMachine::BandScanStateHandler::onExit() {
 }
 
 //decalre variables for rssi LED output
-int rssi = 0;
-int disp = 0;
-int chan =0;
-int peakrssi = 0;
-int peakindex = 0;
-int peakchan = 0;
-static Timer rssipeak = Timer(8 * 1000); //timer in seconds
-int RSSI_THRESH = 95;
+    const int CAPTURE_THRESHOLD = 1000;
+    const int RSSI_THRESHOLD = 95;
+    const int CAPTURE_RATE = 10;
+    const int DECAY_RATE = 5;
+    
+    int redCaptureLevel = 0;
+    int blueCaptureLevel = 0;
+    int redDroneCount = 0;
+    int blueDroneCount = 0;
+    bool defended = false;
+    bool firstRun = true;
+
 
 void StateMachine::BandScanStateHandler::onUpdate() {
     if (!Receiver::isRssiStable())
@@ -60,69 +65,118 @@ void StateMachine::BandScanStateHandler::onUpdate() {
     #else
         rssiData[orderedChanelIndex] = Receiver::rssiA;
     #endif
-
-    //variable used to change fill color based on what frequency is detected
-    chan = constrain(
-            map(
-                orderedChanelIndex,
-                0,
-                CHANNELS_SIZE,
-                0,
-                255
-            ),
-            0,
-            255
-        );
-
-    //variable used to display rssi value
-    int disp = 0;
-    rssi = rssiData[orderedChanelIndex];
-    disp = rssi * NUM_LEDS; //scale it a bit to cover our #of led's
-
-    //well dump disp points into each LED until we run out and display the last led as variable brightness
-    int j = 0;
-    if (disp > BRIGHTNESS){
-      while( disp > BRIGHTNESS) {
-        disp = disp-BRIGHTNESS;
-        //led[#]=CHSV(hue, staturation, brightness);
-        leds[j] = CHSV(chan, 255, 55);//faint glow based of scanned frequency
-        j = j + 1;//somehow i didn't trust ++j lol
-        if(j> NUM_LEDS){//because we can totally walk off this array if brightness is too high or something, idk
-          disp = 0;
-          break;
+    
+    // populate redDroneCount and blueDroneCount variables based on rssi threshold values for each channel
+    redDroneCount = 0;
+    blueDroneCount = 0;
+    for (int i = 0; i < CHANNELS_SIZE; ++i){
+      if (rssiData[orderedChanelIndex]> RSSI_THRESHOLD) {
+        if (orderedChanelIndex % 2 == 0) {
+          redDroneCount++;
+        } else {
+          blueDroneCount++;
         }
       }
     }
-    if( (disp <= BRIGHTNESS) && (j<=NUM_LEDS)) {
-      leds[j] = CHSV(0, 255, disp); //brightness of red based on remaining rssi for last pixel
-    }
+    
+    
+     // start capture game logic and led output
+    if (!firstRun && orderedChanelIndex == 0) {//if it's not the first run, and we are on the beginning of a band scan
+      defended = false; // reset defended flag each loop
+      if (redCaptureLevel >= CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD) { // red controls
+        if (blueDroneCount > 0) { // blue is attacking
+          if (blueDroneCount > redDroneCount) { // more blue drones are near
+            blueCaptureLevel += CAPTURE_RATE * (blueDroneCount - redDroneCount); // blue start capturing
+            if (blueCaptureLevel >= CAPTURE_THRESHOLD) { // blue gains control
+              redCaptureLevel = 0; // red loses control
+            }
+          } else { // more red drones are near (or an equal number of red and blue drones)
+            blueCaptureLevel -= DECAY_RATE; // blue control decays
+            defended = true; // set defended flag to start flashing
+          }
+        }
+      } else if (blueCaptureLevel >= CAPTURE_THRESHOLD && redCaptureLevel < CAPTURE_THRESHOLD) { // blue controls
+        if (redDroneCount > 0) { // red is attacking
+          if (redDroneCount > blueDroneCount) { // more red drones are near
+            redCaptureLevel += CAPTURE_RATE * (redDroneCount - blueDroneCount); // red start capturing
+            if (redCaptureLevel >= CAPTURE_THRESHOLD) { // red gains control
+              blueCaptureLevel = 0; // blue loses control
+            }
+          } else { // more blue drones are near (or an equal number of red and blue drones)
+            redCaptureLevel -= DECAY_RATE; // red control decays
+          }
+        }
+      } else { // tower is uncontrolled
+        redCaptureLevel += CAPTURE_RATE * redDroneCount; // start capturing
+        if (redCaptureLevel >= CAPTURE_THRESHOLD) { // red gains control
+          blueCaptureLevel = 0; // blue loses control
+        }
+        blueCaptureLevel += CAPTURE_RATE * blueDroneCount; // start capturing
+        if (blueCaptureLevel >= CAPTURE_THRESHOLD) { // blue gains control
+          redCaptureLevel = 0; // red loses control
+        }
+      }
+      // end capture
 
-    
-    if(rssipeak.hasTicked()){
-      peakrssi=0;
-    }
-    if( (rssi >= RSSI_THRESH) && (rssi >= peakrssi) ){
-      peakrssi = rssi;
-      peakindex = orderedChanelIndex;
-      peakchan = chan;
-      leds[NUM_LEDS-1] = CHSV(peakchan, 255, BRIGHTNESS);
-      rssipeak.reset();
-    }
-    
-    // Show the leds
-    FastLED.show();
-    //return them all to black for next frequency.
-    for ( int i=0;i<NUM_LEDS;++i){
-      leds[i] = CRGB::Black;
-    }
-    
-    //make it persist to the next channel
-    if((!rssipeak.hasTicked()) && (rssi < peakrssi)){ 
-      leds[NUM_LEDS-1] = CHSV(peakchan, 255, BRIGHTNESS-(BRIGHTNESS/4));
-      leds[NUM_LEDS-2] = CHSV(peakchan, 255, BRIGHTNESS/2);
-      leds[NUM_LEDS-3] = CHSV(peakchan, 255, BRIGHTNESS/3);
-    }
-    
+      // decay team control when unmaintained
+      if (redCaptureLevel > 0 && redCaptureLevel < CAPTURE_THRESHOLD && redDroneCount == 0) { // red started capturing, does not have control, and all red drones have left
+          redCaptureLevel -= DECAY_RATE; // red control decays
+      }
+      if (blueCaptureLevel > 0 && blueCaptureLevel < CAPTURE_THRESHOLD && blueDroneCount == 0) { // blue started capturing, does not have control, and all blue drones have left
+          blueCaptureLevel -= DECAY_RATE; // blue control decays
+      }
+      // end decay
+
+      // start housekeeping
+      if (redCaptureLevel >= CAPTURE_THRESHOLD) {
+        redCaptureLevel = CAPTURE_THRESHOLD;
+      }
+      if (blueCaptureLevel >= CAPTURE_THRESHOLD) {
+        blueCaptureLevel = CAPTURE_THRESHOLD;
+      }
+      if (redCaptureLevel < 0) {
+        redCaptureLevel = 0;
+      }
+      if (blueCaptureLevel < 0) {
+        blueCaptureLevel = 0;
+      }
+      // end housekeeping
+      
+      int redCapturePercent = redCaptureLevel*100/CAPTURE_THRESHOLD; //then mapped and constrained
+      int blueCapturePercent = blueCaptureLevel*100/CAPTURE_THRESHOLD; //then mapped and constrained
+      if (redCaptureLevel < CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD && blueCapturePercent == redCapturePercent) {
+        //display purple up to %
+        leds[(NUM_LEDS-1)*redCapturePercent] = CHSV(peakchan, 255, BRIGHTNESS);
+      } else if (redCapturePercent > blueCapturePercent) {
+        if (redCaptureLevel >= CAPTURE_THRESHOLD) {
+          //display blue up to blueCapturePercent
+        } else {
+          //display purple up to blueCapturePercent (for when cap from neutral)
+        }
+        //display red up to redCapturePercent
+      } else {
+        if (blueCaptureLevel >= CAPTURE_THRESHOLD) {
+          //display red up to redCapturePercent
+        } else {
+          //display purple up to redCapturePercent (for when cap from neutral)
+        }
+        //display blue up to blueCapturePercent
+      }
+      if (blueCaptureLevel >= CAPTURE_THRESHOLD && defended) {
+        //blink blue
+      }
+      if (redCaptureLevel >= CAPTURE_THRESHOLD && defended) {
+        //blink red
+      }
+      if (blueCaptureLevel < CAPTURE_THRESHOLD && redCaptureLevel < CAPTURE_THRESHOLD) {
+        //display neutral state --- 
+      }
+         
+        // end update LED variables
+      } else {
+        firstRun = false;
+      }
+
     
     //stuff that was already here
     //orderedChanelIndex = (orderedChanelIndex + 1) % (CHANNELS_SIZE);
@@ -137,6 +191,8 @@ void StateMachine::BandScanStateHandler::onUpdate() {
     if (orderedChanelIndex == 0) {
 
     }
+    
+    
     
 }
 #define BORDER_LEFT_X 0
