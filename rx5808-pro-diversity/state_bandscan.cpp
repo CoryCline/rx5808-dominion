@@ -41,9 +41,9 @@ void StateMachine::BandScanStateHandler::onEnter() {
     delay(30);
     FastLED.show();
 
-    for(int i=0;i<CHANNELS_SIZE;i++){ //initialize rssiData[] to zero's
-      rssiData[i] = 0;
-    }
+    //for(int i=0;i<CHANNELS_SIZE;i++){ //initialize rssiData[] to zero's
+    //  rssiData[i] = 0;
+    //}
     
 }
 
@@ -52,10 +52,10 @@ void StateMachine::BandScanStateHandler::onExit() {
 }
 
 //decalre variables for rssi LED output
-    const int CAPTURE_THRESHOLD = 100;
-    const int RSSI_THRESHOLD = 50;
+    const int CAPTURE_THRESHOLD = 2000;
+    const int RSSI_THRESHOLD = 15;
     const int CAPTURE_RATE = 10;
-    const int DECAY_RATE = 5;
+    const int DECAY_RATE = 30;
     
     int redCaptureLevel = 0;
     int blueCaptureLevel = 0;
@@ -79,7 +79,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
     redDroneCount = 0;
     blueDroneCount = 0;
     for (int i = 0; i < CHANNELS_SIZE; ++i){
-      if (rssiData[orderedChanelIndex]> RSSI_THRESHOLD) {
+      if (rssiData[orderedChanelIndex] > RSSI_THRESHOLD) {
         if (orderedChanelIndex % 2 == 0) {
           redDroneCount++;
         } else {
@@ -92,7 +92,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
     //blueDroneCount = 1;
     
      // start capture game logic and led output
-    if (!firstRun && orderedChanelIndex == 0) {//if it's not the first run, and we are on the beginning of a band scan
+    if (!firstRun && orderedChanelIndex == 0) {//if it's not the first run, and we are on the beginning of a band scan .... if you change it to && orderedChanelIndex == 1 , then red becomes blue. wtf
       defended = false; // reset defended flag each loop
       if (redCaptureLevel >= CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD) { // red controls
         if (blueDroneCount > 0) { // blue is attacking
