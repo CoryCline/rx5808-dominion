@@ -1,7 +1,5 @@
 then a wild Gerald appeared.
 
-   
-    
 led output states: 
     % blue to display = blueCaptureLevel*100/CAPTURE_THRESHOLD
     blue blink = blueCaptureLevel >= CAPTURE_THRESHOLD && defended
@@ -15,32 +13,32 @@ led output states:
     const int CAPTURE_THRESHOLD = 1000;
     const int CAPTURE_RATE = 10;
     const int DECAY_RATE = 5;
-		
+    
     int redCaptureLevel = 0;
     int blueCaptureLevel = 0;
     int redDroneCount = 0;
     int blueDroneCount = 0;
-		bool defended = false;
-		bool firstRun = true;
+    bool defended = false;
+    bool firstRun = true;
 
 
-	// game loop starts here
+  // game loop starts here
 
     // populate redDroneCount and blueDroneCount variables based on rssi values for each channel
-		//redDroneCount = 0;
-		//blueDroneCount = 0;
-		//for each channel {
+    //redDroneCount = 0;
+    //blueDroneCount = 0;
+    //for each channel {
       //if (channelRSSI > SIGNAL_STRENGTH_THRESHOLD) {
-				//if (channel % 2 == 0) {
-					//redDroneCount++;
-				//} else {
-					//blueDroneCount++;
-				//}
-			//}
+        //if (channel % 2 == 0) {
+          //redDroneCount++;
+        //} else {
+          //blueDroneCount++;
+        //}
+      //}
     //}
 
     // start capture
-		if (!firstRun) {
+    if (!firstRun) {
       defended = false; // reset defended flag each loop
       if (redCaptureLevel >= CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD) { // red controls
         if (blueDroneCount > 0) { // blue is attacking
@@ -102,61 +100,12 @@ led output states:
       // end housekeeping
 
       // update LED variables
-    	
+      	
       // end update LED variables
     } else {
       firstRun = false;
     }
 
-	// end game loop
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    Code:
-    
-    
-    if (redCaptureLevel == captureThreshold && blueCaptureLevel < captureThreshold) { // red controls
-  		if (blueDroneCount > 0 && blueDroneCount > redDroneCount) { // more blue drones are near
-      	blueCaptureLevel += captureRate * (blueDroneCount - redDroneCount); // start capturing
-      }
-    } else if (blueCaptureLevel == captureThreshold && redCaptureLevel < captureThreshold) { // blue controls
-  		if (redDroneCount > 0 && redDroneCount > blueDroneCount) { // more red drones are near
-      	redCaptureLevel += captureRate * (redDroneCount - blueDroneCount); // start capturing
-      }
-    }
-    
-    if (redCaptureLevel >= captureThreshold) { // red captured
-      redCaptureLevel = captureThreshold;
-    } else if (blueCaptureLevel >= captureThreshold) { // blue captured
-      blueCaptureLevel = captureThreshold;
-    } else 
-    
-    
-    if (redCaptureLevel < 0) {
-    	redCaptureLevel = 0;
-    }
-    if (blueCaptureLevel < 0) {
-    	blueCaptureLevel = 0;
-    }
-    
-    
-//    if (redCaptureLevel >= captureThreshold && blueCaptureLevel >= captureThreshold) { // too close to tell
-//    	if (redCaptureLevel > blueCaptureLevel) {
-//      	redCaptureLevel = captureThreshold;
-//      } else if (blueCaptureLevel > redCaptureLevel) {
-//      	blueCaptureLevel = captureThreshold;
-//      } else {
-//      	redCaptureLevel = captureThreshold - 1;
-//        blueCaptureLevel = captureThreshold - 1;
-//      }
-//    }
+  // end game loop
     
     
