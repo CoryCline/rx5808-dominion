@@ -53,9 +53,9 @@ void StateMachine::BandScanStateHandler::onExit() {
 
 //decalre variables for rssi LED output
     const int CAPTURE_THRESHOLD = 1000;
-    const int RSSI_THRESHOLD = 50;
-    const int CAPTURE_RATE = 10;
-    const int DECAY_RATE = 150;
+    const int RSSI_THRESHOLD = 90;
+    const int CAPTURE_RATE = 50;
+    const int DECAY_RATE = 350;
     
     int redCaptureLevel = 0;
     int blueCaptureLevel = 0;
@@ -179,10 +179,6 @@ void StateMachine::BandScanStateHandler::onUpdate() {
             leds[i] = CHSV(192,255, BRIGHTNESS);//purple
           }
         }
-        //display red up to redCapturePercent
-        //for(int i=0;i<(redCapturePercent);++i){
-          //leds[i] = CHSV(0, 255, BRIGHTNESS);//red
-        //}
       } else {
         if (blueCaptureLevel >= CAPTURE_THRESHOLD) {
           //display blue up to blueCapturePercent
