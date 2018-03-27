@@ -55,7 +55,7 @@ void StateMachine::BandScanStateHandler::onExit() {
     const int CAPTURE_THRESHOLD = 1000;
     const int RSSI_THRESHOLD = 90;
     const int CAPTURE_RATE = 50;
-    const int DECAY_RATE = 350;
+    const int DECAY_RATE = 450;
     
     int redCaptureLevel = 0;
     int blueCaptureLevel = 0;
@@ -111,6 +111,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
             }
           } else { // more blue drones are near (or an equal number of red and blue drones)
             redCaptureLevel -= DECAY_RATE; // red control decays
+            defended = true; // set defended flag to start flashing
           }
         }
       } else { // tower is uncontrolled
@@ -163,7 +164,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
         for(int i=0;i<(redCapturePercent);++i){
           leds[i] = CHSV(192, 255, BRIGHTNESS);//purple
         }
-      } else if (redCapturePercent > blueCapturePercent) {
+      } else if (redCapturePercent >= blueCapturePercent) {
         //display red up to redCapturePercent
         for(int i=0;i<(redCapturePercent);++i){
           leds[i] = CHSV(0, 255, BRIGHTNESS);//red
@@ -179,13 +180,12 @@ void StateMachine::BandScanStateHandler::onUpdate() {
             leds[i] = CHSV(192,255, BRIGHTNESS);//purple
           }
         }
-      } else {
+      } else {//blueCapturePercent is greater than redCapturePercent
+        //display blue up to blueCapturePercent
+        for(int i=0;i<(blueCapturePercent);++i){
+          leds[i] = CHSV(160,255, BRIGHTNESS);//blue
+        }
         if (blueCaptureLevel >= CAPTURE_THRESHOLD) {
-          //display blue up to blueCapturePercent
-          for(int i=0;i<(blueCapturePercent);++i){
-            leds[i] = CHSV(160,255, BRIGHTNESS);//blue
-          }
-          //display red up to redCapturePercent
           for(int i=0;i<(redCapturePercent);++i){
             leds[i] = CHSV(0, 255, BRIGHTNESS);//red
           }
@@ -195,17 +195,16 @@ void StateMachine::BandScanStateHandler::onUpdate() {
             leds[i] = CHSV(192, 255, BRIGHTNESS);//purple
           }
         }
-        
       }
       if (blueCaptureLevel >= CAPTURE_THRESHOLD && defended) {
         //blink blue
-        leds[((NUM_LEDS-1)/2)] = CHSV(160,255, BRIGHTNESS);//blue
-        leds[(NUM_LEDS-1)] = CHSV(160,255, BRIGHTNESS);//blue
+        leds[((NUM_LEDS-1)/2)] = CRGB::Gray;
+        leds[(NUM_LEDS-1)] = CRGB::Gray;
       }
       if (redCaptureLevel >= CAPTURE_THRESHOLD && defended) {
         //blink red
-        leds[((NUM_LEDS-1)/2)] = CHSV(0,255, BRIGHTNESS);//red
-        leds[(NUM_LEDS-1)] = CHSV(0,255, BRIGHTNESS);//red
+        leds[((NUM_LEDS-1)/2)] = CRGB::Gray;
+        leds[(NUM_LEDS-1)] = CRGB::Gray;
       }
       if (blueCaptureLevel < CAPTURE_THRESHOLD && redCaptureLevel < CAPTURE_THRESHOLD && (blueCapturePercent == 0 && redCapturePercent == 0) ) { //added zero so it doesn't try to display white over a filling up color
         //display neutral state --- 
