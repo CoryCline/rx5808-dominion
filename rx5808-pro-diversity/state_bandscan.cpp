@@ -13,8 +13,9 @@
 #include "buttons.h"
 
 //for led peak timing
-#include "timer.h"
-
+include "Timer.h"
+static Timer gameLengthTimer = Timer(3000*60);
+static Timer pauseLengthTimer = Timer(1000*60);
 
 #include "ui.h"
 #include "ui_menu.h"
@@ -40,6 +41,9 @@ void StateMachine::BandScanStateHandler::onEnter() {
     }
     delay(30);
     FastLED.show();
+	//reset timers initially
+	gameLengthTimer = reset();
+	pauseLengthTimer = reset();
 
     //for(int i=0;i<CHANNELS_SIZE;i++){ //initialize rssiData[] to zero's
     //  rssiData[i] = 0;
@@ -71,10 +75,24 @@ void StateMachine::BandScanStateHandler::onUpdate() {
 
     #ifdef USE_DIVERSITY
         rssiData[orderedChanelIndex] = (Receiver::rssiA + Receiver::rssiB) / 2;
+		// TODO: have <r; redacted> antennas and look for <redacted> to determine if they are <redacted>.
     #else
         rssiData[orderedChanelIndex] = Receiver::rssiA;
     #endif
     
+	//timer code
+	if(!gameLengthTimer.hasticked();) { //if game timer hasn't elapsed
+		GAME = true;
+		pauseLengthTimer.reset();
+	}else { //else the game timer has elapsed
+		GAME = false;
+		if(pauseLengthTimer.hasticked();){ //if the pause length has elaplsed
+			Game = true;
+			gameLengthTimer.reset();
+		}
+			
+	}
+	
      // start capture game logic and led output
     if (!firstRun && orderedChanelIndex == 0) {//if it's not the first run, and we are on the beginning of a band scan .... if you change it to && orderedChanelIndex == 1 , then red becomes blue. wtf
       // populate redDroneCount and blueDroneCount variables based on rssi threshold values for each channel
@@ -89,6 +107,16 @@ void StateMachine::BandScanStateHandler::onUpdate() {
           }
         }
       }
+	  
+	  if(!GAME) { //timer code to lock out game
+		  redDroneCount = 0;
+		  blueDroneCount = 0;
+		  redCaptureLevel = 0;
+		  blueCaptureLevel = 0;
+		  defended = false;
+	  }
+	  
+	  
       defended = false; // reset defended flag each loop
       if (redCaptureLevel >= CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD) { // red controls
         if (blueDroneCount > 0) { // blue is attacking
