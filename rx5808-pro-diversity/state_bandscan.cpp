@@ -13,9 +13,10 @@
 #include "buttons.h"
 
 //for led peak timing
-include "Timer.h"
-static Timer gameLengthTimer = Timer(3000*60);
-static Timer pauseLengthTimer = Timer(1000*60);
+#include "Timer.h"
+static Timer gameLengthTimer = Timer(30000);
+static Timer pauseLengthTimer = Timer(1000);
+bool GAME = true;
 
 #include "ui.h"
 #include "ui_menu.h"
@@ -42,8 +43,8 @@ void StateMachine::BandScanStateHandler::onEnter() {
     delay(30);
     FastLED.show();
 	//reset timers initially
-	gameLengthTimer = reset();
-	pauseLengthTimer = reset();
+	gameLengthTimer.reset();
+	pauseLengthTimer.reset();
 
     //for(int i=0;i<CHANNELS_SIZE;i++){ //initialize rssiData[] to zero's
     //  rssiData[i] = 0;
@@ -81,13 +82,13 @@ void StateMachine::BandScanStateHandler::onUpdate() {
     #endif
     
 	//timer code
-	if(!gameLengthTimer.hasticked();) { //if game timer hasn't elapsed
+	if(!gameLengthTimer.hasTicked()) { //if game timer hasn't elapsed
 		GAME = true;
 		pauseLengthTimer.reset();
 	}else { //else the game timer has elapsed
 		GAME = false;
-		if(pauseLengthTimer.hasticked();){ //if the pause length has elaplsed
-			Game = true;
+		if(pauseLengthTimer.hasTicked()){ //if the pause length has elaplsed
+			GAME = true;
 			gameLengthTimer.reset();
 		}
 			
@@ -107,7 +108,9 @@ void StateMachine::BandScanStateHandler::onUpdate() {
           }
         }
       }
-	  
+    //timer test code!
+    redDroneCount = 1;
+    
 	  if(!GAME) { //timer code to lock out game
 		  redDroneCount = 0;
 		  blueDroneCount = 0;
