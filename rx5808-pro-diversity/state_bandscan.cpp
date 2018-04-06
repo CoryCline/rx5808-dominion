@@ -14,8 +14,8 @@
 
 //for led peak timing
 #include "Timer.h"
-static Timer gameLengthTimer = Timer(30000);
-static Timer pauseLengthTimer = Timer(1000);
+static Timer gameLengthTimer =  Timer(60000);
+static Timer pauseLengthTimer = Timer(10000);
 bool GAME = true;
 
 #include "ui.h"
