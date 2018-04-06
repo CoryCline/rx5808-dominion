@@ -109,7 +109,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
         }
       }
     //timer test code!
-    redDroneCount = 1;
+    //redDroneCount = 1;
     
 	  if(!GAME) { //timer code to lock out game
 		  redDroneCount = 0;
