@@ -13,8 +13,10 @@
 #include "buttons.h"
 
 //for led peak timing
-#include "timer.h"
-
+#include "Timer.h"
+static Timer gameLengthTimer =  Timer(65535); //60 seconds = 60,000 ... max is 65,535
+static Timer pauseLengthTimer = Timer(10000); //10 seconds
+bool GAME = true;
 
 #include "ui.h"
 #include "ui_menu.h"
@@ -35,6 +37,18 @@ void StateMachine::BandScanStateHandler::onEnter() {
     //LED stuff
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness(  BRIGHTNESS );
+    for ( int i=0;i<NUM_LEDS;++i){ //trying this to get rid of green and purple at first power on... might be something to do with inital values of rssiData[orderedChanelIndex] tho...
+        leds[i] = CRGB::Black;
+    }
+    delay(30);
+    FastLED.show();
+	//reset timers initially
+	gameLengthTimer.reset();
+	pauseLengthTimer.reset();
+
+    //for(int i=0;i<CHANNELS_SIZE;i++){ //initialize rssiData[] to zero's
+    //  rssiData[i] = 0;
+    //}
     
 }
 
@@ -44,9 +58,9 @@ void StateMachine::BandScanStateHandler::onExit() {
 
 //decalre variables for rssi LED output
     const int CAPTURE_THRESHOLD = 1000;
-    const int RSSI_THRESHOLD = 95;
-    const int CAPTURE_RATE = 10;
-    const int DECAY_RATE = 5;
+    const int RSSI_THRESHOLD = 90;
+    const int CAPTURE_RATE = 50;
+    const int DECAY_RATE = 450;
     
     int redCaptureLevel = 0;
     int blueCaptureLevel = 0;
@@ -62,26 +76,50 @@ void StateMachine::BandScanStateHandler::onUpdate() {
 
     #ifdef USE_DIVERSITY
         rssiData[orderedChanelIndex] = (Receiver::rssiA + Receiver::rssiB) / 2;
+		// TODO: have <r; redacted> antennas and look for <redacted> to determine if they are <redacted>.
     #else
         rssiData[orderedChanelIndex] = Receiver::rssiA;
     #endif
     
-    // populate redDroneCount and blueDroneCount variables based on rssi threshold values for each channel
-    redDroneCount = 0;
-    blueDroneCount = 0;
-    for (int i = 0; i < CHANNELS_SIZE; ++i){
-      if (rssiData[orderedChanelIndex]> RSSI_THRESHOLD) {
-        if (orderedChanelIndex % 2 == 0) {
-          redDroneCount++;
-        } else {
-          blueDroneCount++;
+	//timer code
+	if(!gameLengthTimer.hasTicked()) { //if game timer hasn't elapsed
+		GAME = true;
+		pauseLengthTimer.reset();
+	}else { //else the game timer has elapsed
+		GAME = false;
+		if(pauseLengthTimer.hasTicked()){ //if the pause length has elaplsed
+			GAME = true;
+			gameLengthTimer.reset();
+		}
+			
+	}
+	
+     // start capture game logic and led output
+    if (!firstRun && orderedChanelIndex == 0) {//if it's not the first run, and we are on the beginning of a band scan .... if you change it to && orderedChanelIndex == 1 , then red becomes blue. wtf
+      // populate redDroneCount and blueDroneCount variables based on rssi threshold values for each channel
+      redDroneCount = 0;
+      blueDroneCount = 0;
+      for (int i = 0; i < CHANNELS_SIZE; ++i){
+        if (rssiData[i] > RSSI_THRESHOLD) {
+          if (i % 2 == 0) {
+            redDroneCount++;
+          } else {
+            blueDroneCount++;
+          }
         }
       }
-    }
+    //timer test code!
+    redDroneCount = 1;
     
-    
-     // start capture game logic and led output
-    if (!firstRun && orderedChanelIndex == 0) {//if it's not the first run, and we are on the beginning of a band scan
+	  if(!GAME) { //timer code to lock out game
+		  redDroneCount = 0;
+		  blueDroneCount = 0;
+		  redCaptureLevel = 0;
+		  blueCaptureLevel = 0;
+		  defended = false;
+	  }
+	  
+	  
       defended = false; // reset defended flag each loop
       if (redCaptureLevel >= CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD) { // red controls
         if (blueDroneCount > 0) { // blue is attacking
@@ -104,6 +142,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
             }
           } else { // more blue drones are near (or an equal number of red and blue drones)
             redCaptureLevel -= DECAY_RATE; // red control decays
+            defended = true; // set defended flag to start flashing
           }
         }
       } else { // tower is uncontrolled
@@ -142,67 +181,79 @@ void StateMachine::BandScanStateHandler::onUpdate() {
       }
       // end housekeeping
       
-      //return the LED's all to black so we can display a change! ... should work here
-      for ( int i=0;i<NUM_LEDS;++i){
-        leds[i] = CRGB::Black;
-      }
       
-      int redCapturePercent = redCaptureLevel*100/CAPTURE_THRESHOLD; //then mapped and constrained
-      int blueCapturePercent = blueCaptureLevel*100/CAPTURE_THRESHOLD; //then mapped and constrained
+      //red and blueCapturePercent represents how many led's to light up
+      int redCapturePercent = constrain( 
+                                map(redCaptureLevel*100/CAPTURE_THRESHOLD, 0, 100, 0, NUM_LEDS)
+                              ,0, NUM_LEDS);
+      int blueCapturePercent = constrain( 
+                                map(blueCaptureLevel*100/CAPTURE_THRESHOLD,0,100,0, NUM_LEDS)
+                               ,0, NUM_LEDS);
+      
       if (redCaptureLevel < CAPTURE_THRESHOLD && blueCaptureLevel < CAPTURE_THRESHOLD && blueCapturePercent == redCapturePercent) {
         //display purple up to %
-        for(int i=0;i<((NUM_LEDS-1)*redCapturePercent);++i){
+        for(int i=0;i<(redCapturePercent);++i){
           leds[i] = CHSV(192, 255, BRIGHTNESS);//purple
         }
-      } else if (redCapturePercent > blueCapturePercent) {
+      } else if (redCapturePercent >= blueCapturePercent) {
+        //display red up to redCapturePercent
+        for(int i=0;i<(redCapturePercent);++i){
+          leds[i] = CHSV(0, 255, BRIGHTNESS);//red
+        }
         if (redCaptureLevel >= CAPTURE_THRESHOLD) {
           //display blue up to blueCapturePercent
-          for(int i=0;i<((NUM_LEDS-1)*blueCapturePercent);++i){
+          for(int i=0;i<(blueCapturePercent);++i){
             leds[i] = CHSV(160,255, BRIGHTNESS);//blue
           }
         } else {
           //display purple up to blueCapturePercent (for when cap from neutral)
-          for(int i=0;i<((NUM_LEDS-1)*blueCapturePercent);++i){
+          for(int i=0;i<(blueCapturePercent);++i){
             leds[i] = CHSV(192,255, BRIGHTNESS);//purple
           }
         }
-        //display red up to redCapturePercent
-        for(int i=0;i<((NUM_LEDS-1)*redCapturePercent);++i){
-          leds[i] = CHSV(0, 255, BRIGHTNESS);//red
+      } else {//blueCapturePercent is greater than redCapturePercent
+        //display blue up to blueCapturePercent
+        for(int i=0;i<(blueCapturePercent);++i){
+          leds[i] = CHSV(160,255, BRIGHTNESS);//blue
         }
-      } else {
         if (blueCaptureLevel >= CAPTURE_THRESHOLD) {
-          //display red up to redCapturePercent
-          for(int i=0;i<((NUM_LEDS-1)*redCapturePercent);++i){
+          for(int i=0;i<(redCapturePercent);++i){
             leds[i] = CHSV(0, 255, BRIGHTNESS);//red
           }
         } else {
           //display purple up to redCapturePercent (for when cap from neutral)
-          for(int i=0;i<((NUM_LEDS-1)*redCapturePercent);++i){
+          for(int i=0;i<(redCapturePercent);++i){
             leds[i] = CHSV(192, 255, BRIGHTNESS);//purple
           }
         }
-        //display blue up to blueCapturePercent
-        for(int i=0;i<((NUM_LEDS-1)*blueCapturePercent);++i){
-          leds[i] = CHSV(160,255, BRIGHTNESS);//blue
-        {
       }
       if (blueCaptureLevel >= CAPTURE_THRESHOLD && defended) {
         //blink blue
-        leds[(NUM_LEDS-1)] = CHSV(160,255, BRIGHTNESS);//blue
+        leds[((NUM_LEDS-1)/2)] = CRGB::Gray;
+        leds[(NUM_LEDS-1)] = CRGB::Gray;
       }
       if (redCaptureLevel >= CAPTURE_THRESHOLD && defended) {
         //blink red
-        leds[(NUM_LEDS-1)] = CHSV(0,255, BRIGHTNESS);//red
+        leds[((NUM_LEDS-1)/2)] = CRGB::Gray;
+        leds[(NUM_LEDS-1)] = CRGB::Gray;
       }
-      if (blueCaptureLevel < CAPTURE_THRESHOLD && redCaptureLevel < CAPTURE_THRESHOLD) {
+      if (blueCaptureLevel < CAPTURE_THRESHOLD && redCaptureLevel < CAPTURE_THRESHOLD && (blueCapturePercent == 0 && redCapturePercent == 0) ) { //added zero so it doesn't try to display white over a filling up color
         //display neutral state --- 
         for(int i=0;i<NUM_LEDS;++i){
-          leds[i] = CRGB::Gray;
+          if(i%2==1){
+            leds[i] = CRGB::Gray;
+          }
         }
       }
       // Show the leds
       FastLED.show();  
+
+      //delay(5000); //to troubleshoot beginning issue.
+      
+      //return the LED's all to black so we can display a change! ... should work here
+      for ( int i=0;i<NUM_LEDS;++i){
+        leds[i] = CRGB::Black;
+      }
       
       } else {
         firstRun = false;

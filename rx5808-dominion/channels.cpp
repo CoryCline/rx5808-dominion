@@ -219,8 +219,6 @@ static const uint8_t channelFreqOrderedIndex[] PROGMEM = {
 
 static const uint8_t channelETBest6Index[] PROGMEM = {
     #ifdef USE_LBAND
-        //44, // 5510
-        //45, // 5547
         19, // 5645
         32, // 5658
         25, // 5760
