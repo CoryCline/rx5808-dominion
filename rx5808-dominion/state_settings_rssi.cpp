@@ -27,20 +27,20 @@ void StateMachine::SettingsRssiStateHandler::onUpdate() {
             if (Receiver::rssiARaw < EepromSettings.rssiAMin)
                 EepromSettings.rssiAMin = Receiver::rssiARaw;
 
-            #ifdef USE_DIVERSITY
-                if (Receiver::rssiBRaw < EepromSettings.rssiBMin)
-                    EepromSettings.rssiBMin = Receiver::rssiBRaw;
-            #endif
+            //#ifdef USE_DIVERSITY
+            //    if (Receiver::rssiBRaw < EepromSettings.rssiBMin)
+            //        EepromSettings.rssiBMin = Receiver::rssiBRaw;
+            //#endif
         break;
 
         case InternalState::SCANNING_HIGH:
             if (Receiver::rssiARaw > EepromSettings.rssiAMax)
                 EepromSettings.rssiAMax = Receiver::rssiARaw;
 
-            #ifdef USE_DIVERSITY
-                if (Receiver::rssiBRaw > EepromSettings.rssiBMax)
-                    EepromSettings.rssiBMax = Receiver::rssiBRaw;
-            #endif
+            //#ifdef USE_DIVERSITY
+            //    if (Receiver::rssiBRaw > EepromSettings.rssiBMax)
+            //        EepromSettings.rssiBMax = Receiver::rssiBRaw;
+            //#endif
         break;
     }
 

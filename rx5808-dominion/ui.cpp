@@ -1,6 +1,7 @@
 #include <stdint.h>
-#include <Adafruit_SSD1306.h>
 #include <avr/pgmspace.h>
+#include <Adafruit_SH1106.h>
+#include <Adafruit_GFX.h>
 
 #include "settings.h"
 #include "settings_internal.h"

@@ -58,13 +58,14 @@ void StateMachine::BandScanStateHandler::onExit() {
 
 void StateMachine::BandScanStateHandler::onUpdate() {
     if (!Receiver::isRssiStable())
+    Serial.println("RSSI STABLE FAILURE"); //DELETEME
         return;
 
-    #ifdef USE_DIVERSITY
-        rssiData[orderedChanelIndex] = (Receiver::rssiA + Receiver::rssiB) / 2;
-    #else
+    //#ifdef USE_DIVERSITY
+    //    rssiData[orderedChanelIndex] = (Receiver::rssiA + Receiver::rssiB) / 2;
+    //#else
         rssiData[orderedChanelIndex] = Receiver::rssiA;
-    #endif
+    //#endif
     
     // populate redDroneCount and blueDroneCount variables based on rssi threshold values for each channel
     redDroneCount = 0;
@@ -204,7 +205,7 @@ void StateMachine::BandScanStateHandler::onUpdate() {
       // Show the leds
       FastLED.show();  
       
-      } else {
+      }}} else {
         firstRun = false;
       }
 

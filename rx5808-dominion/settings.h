@@ -1,3 +1,6 @@
+
+
+
 /*
  * Setings file by Shea Ivey
 
@@ -36,7 +39,7 @@ SOFTWARE.
 // =============================================================================
 
 // SSH1106 needs https://github.com/badzz/Adafruit_SH1106 installed.
-//#define SH1106
+#define SH1106
 
 //#define TVOUT_SCREENS
 #define OLED_128x64_ADAFRUIT_SCREENS
@@ -45,7 +48,7 @@ SOFTWARE.
 //#define USE_FLIP_SCREEN
 
 #ifdef OLED_128x64_ADAFRUIT_SCREENS
-    #define OLED_ADDRESS 0x3C // I2C address for display (0x3C or 0x3D, usually)
+    #define OLED_ADDRESS 0x3D // I2C address for display (0x3C or 0x3D, usually)
 #endif
 
 // === Receiver Module =========================================================
@@ -70,7 +73,7 @@ SOFTWARE.
 //
 // =============================================================================
 
-#define USE_DIVERSITY
+//#define USE_DIVERSITY
 
 // Enable this to switch receivers much faster. This uses the port registers
 // to switch rather than the Arduino helper functions.
@@ -83,7 +86,7 @@ SOFTWARE.
 // PORTC: Pins A0-A7
 // PORTD: 0-7
 // PORTB: 8-13
-#define USE_DIVERSITY_FAST_SWITCHING
+//#define USE_DIVERSITY_FAST_SWITCHING
 
 //#define USE_IR_EMITTER
 //#define USE_SERIAL_OUT // Not compatible with IR emitter.
@@ -102,7 +105,7 @@ SOFTWARE.
 //     5584 MHz
 //     5621 MHz
 // Local laws may prohibit the use of these frequencies so use at your own risk!
-#define USE_LBAND
+// #define USE_LBAND
 
 // === Pins ====================================================================
 
@@ -115,18 +118,18 @@ SOFTWARE.
 #define PIN_BUTTON_SAVE 5
 
 #define PIN_LED 13
-#define PIN_BUZZER 6 // Must be an active buzzer, not passive.
+//#define PIN_BUZZER 6 // Must be an active buzzer, not passive.
 
-#define PIN_SPI_DATA 10
-#define PIN_SPI_SLAVE_SELECT 11
-#define PIN_SPI_CLOCK 12
+#define PIN_SPI_DATA 11
+#define PIN_SPI_SLAVE_SELECT 10
+#define PIN_SPI_CLOCK 13
 
-#define PIN_RSSI_A A6
-#define PIN_LED_A A0
-#ifdef USE_DIVERSITY
-    #define PIN_LED_B A1
-    #define PIN_RSSI_B A7
-#endif
+#define PIN_RSSI_A A0
+#define PIN_LED_A A2
+//#ifdef USE_DIVERSITY
+//    #define PIN_LED_B A1
+//    #define PIN_RSSI_B A7
+//#endif
 
 #ifdef USE_VOLTAGE_MONITORING
     #ifdef TVOUT_SCREENS

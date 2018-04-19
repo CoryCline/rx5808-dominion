@@ -20,14 +20,14 @@ namespace Receiver {
     uint8_t rssiA = 0;
     uint16_t rssiARaw = 0;
     uint8_t rssiALast[RECEIVER_LAST_DATA_SIZE] = { 0 };
-    #ifdef USE_DIVERSITY
-        uint8_t rssiB = 0;
-        uint16_t rssiBRaw = 0;
-        uint8_t rssiBLast[RECEIVER_LAST_DATA_SIZE] = { 0 };
+    //#ifdef USE_DIVERSITY
+    //   uint8_t rssiB = 0;
+    //   uint16_t rssiBRaw = 0;
+    //   uint8_t rssiBLast[RECEIVER_LAST_DATA_SIZE] = { 0 };
 
-        ReceiverId diversityTargetReceiver = activeReceiver;
-        Timer diversityHysteresisTimer = Timer(DIVERSITY_HYSTERESIS_PERIOD);
-    #endif
+    //    ReceiverId diversityTargetReceiver = activeReceiver;
+    //    Timer diversityHysteresisTimer = Timer(DIVERSITY_HYSTERESIS_PERIOD);
+    //#endif
 
     static Timer rssiStableTimer = Timer(MIN_TUNE_TIME);
     static Timer rssiLogTimer = Timer(RECEIVER_LAST_DELAY);
@@ -80,6 +80,8 @@ namespace Receiver {
     uint16_t updateRssi() {
         analogRead(PIN_RSSI_A); // Fake read to let ADC settle.
         rssiARaw = analogRead(PIN_RSSI_A);
+        Serial.print("RAW RSSI: ");
+        Serial.println(rssiARaw);
         #ifdef USE_DIVERSITY
             analogRead(PIN_RSSI_B);
             rssiBRaw = analogRead(PIN_RSSI_B);
@@ -96,6 +98,8 @@ namespace Receiver {
             0,
             100
         );
+        Serial.print("RSSI FIXED");
+        Serial.print(rssiA);
         #ifdef USE_DIVERSITY
             rssiB = constrain(
                 map(
